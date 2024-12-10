@@ -115,9 +115,17 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
         cp.T = GDT.xyz();
         cp.T.normalize();
 
-        // Only calculating tangent for now
-        cp.B = Vector3f(0,0,0);
-        cp.N = Vector3f(0,0,0);
+        // Arbitrary binormal
+        Vector3f B0(1,0,0); 
+
+        // Check that B0 and T aren't parallel
+        if (approx(cp.T, B0))
+        {
+            B0 = Vector3f(0,1,0);
+        }
+
+        cp.N = Vector3f::cross(B0,cp.T).normalized();
+        cp.B = Vector3f::cross(cp.T,cp.N).normalized();
 
         // set first sample point
         curve[0] = cp;
@@ -173,9 +181,8 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
             cp.T = GDT.xyz();
             cp.T.normalize();
 
-            // Only calculating tangent for now
-            cp.B = Vector3f(0,0,0);
-            cp.N = Vector3f(0,0,0);
+            cp.N = Vector3f::cross(curve[u-1].B,cp.T).normalized();
+            cp.B = Vector3f::cross(cp.T,cp.N).normalized();
 
             // add sample point to Curve
             curve[u] = cp;
