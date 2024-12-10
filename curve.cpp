@@ -156,89 +156,90 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
         exit( 0 );
     }
 
-    // TODO:
-    // It is suggested that you implement this function by changing
-    // basis from B-spline to Bezier.  That way, you can just call
-    // your evalBezier function.
-
+    // Print input information
     cerr << "\t>>> evalBSpline has been called with the following input:" << endl;
-
+    cerr << "\t>>> Steps (type steps): " << steps << endl;
     cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
     for( unsigned i = 0; i < P.size(); ++i )
     {
         cerr << "\t>>> (" << P[i].x() << "," << P[i].y() << "," << P[i].z() << ")" << endl;
     }
 
-    cerr << "\t>>> Steps (type steps): " << steps << endl;
-    cerr << "\t>>> Returning empty curve." << endl;
+    // This function simply does of change of basis from B-Spline to Bezier, then calls
+    // evalBezier to do rest of work.
     
-    // For now assume 1 bezier curve (i.e 4 points)
-
-    // B-spline basis (B_Spline)
-    Matrix4f B_Spline(
+    // B-spline basis
+    const Matrix4f B1(
         1/6.f, -3/6.f,  3/6.f, -1/6.f,
         4/6.f,  0/6.f, -6/6.f,  3/6.f,
         1/6.f,  3/6.f,  3/6.f, -3/6.f,
         0/6.f,  0/6.f,  0/6.f,  1/6.f
     );
 
-    // Bernstein basis (B_Bezier)
-    const Matrix4f B_Bezier(
+    // Bernstein/Bezier basis
+    const Matrix4f B2(
         1, -3,  3, -1,
         0,  3, -6,  3,
         0,  0,  3, -3,
         0,  0,  0,  1
     );
 
-    // B3 = B_spline * B_bezier^(-1)
-    const Matrix4f B3 = B_Spline * B_Bezier.inverse();
+    // B1 * B2^(-1)
+    const Matrix4f B3 = B1 * B2.inverse();
 
     // B-Spline curve count
-    const int numberOfBSplineCurves = P.size() - 3;
-    // Count of control points for Bezier curve
-    const int numberOfBezierControlPoints = (numberOfBSplineCurves - 1) * 3 + 4;
-    vector<Vector3f> P_Bezier(numberOfBezierControlPoints);
+    const unsigned bSplineCurvesCount = P.size() - 3;
 
-    // First, set P_Bezier[0]
+    // Count of control points for Bezier curves
+    const unsigned bezierControlPointsCount = (bSplineCurvesCount - 1) * 3 + 4;
+
+    // Control points in Bezier basis
+    vector<Vector3f> P2(bezierControlPointsCount);
+
+    // First, do change of basis to Bezier for first control point only
     {
-        // Control points matrix (G_spline)
-        const Matrix4f G_Spline(
+        // Control points matrix in b-spline basis
+        const Matrix4f G1(
             P[0].x(), P[1].x(), P[2].x(), P[3].x(),
             P[0].y(), P[1].y(), P[2].y(), P[3].y(),
             P[0].z(), P[1].z(), P[2].z(), P[3].z(),
             0,        0,        0,        0
         );
-        // Change of basis from b-spline to bezier
-        const Matrix4f G_Bezier = G_Spline * B3;
+
+        // Control points matrix in Bezier basis
+        const Matrix4f G2 = G1 * B3;
         
-        P_Bezier[0] = G_Bezier.getCol(0).xyz();
+        // set first control point
+        P2[0] = G2.getCol(0).xyz();
     }
 
-    // Then for each curve set only the last 3 of its respective control points
-    // index of next control point in P_Bezier to set
-    int pBezierIndex = 1;
-    for (int i = 0; i < P.size() - 3; i++)
+    // Then, for each curve set only the last 3 of its respective control points
+
+    // index of next Bezier control point to set
+    unsigned u = 1;
+
+    for (unsigned i = 0; i < P.size() - 3; i++)
     {
-        // Control points matrix (G_spline)
-        const Matrix4f G_Spline(
+        // Control points matrix in B-Spline basis
+        const Matrix4f G1(
             P[i].x(), P[i + 1].x(), P[i + 2].x(), P[i + 3].x(),
             P[i].y(), P[i + 1].y(), P[i + 2].y(), P[i + 3].y(),
             P[i].z(), P[i + 1].z(), P[i + 2].z(), P[i + 3].z(),
             0,        0,        0,        0
         );
 
-        // Change of basis from b-spline to bezier
-        const Matrix4f G_Bezier = G_Spline * B3;
+        // Control points matrix in Bezier basis
+        const Matrix4f G2 = G1 * B3;
 
         // only set last 3 control points of current curve
-        for (int k = 0; k < 3; k++)
+        for (unsigned k = 0; k < 3; k++)
         {
-            P_Bezier[pBezierIndex] = G_Bezier.getCol(k + 1).xyz();
-            pBezierIndex++;
+            P2[u] = G2.getCol(k + 1).xyz();
+            u++;
         }
     }
 
-    return evalBezier(P_Bezier, steps);
+    return evalBezier(P2, steps);
 }
 
 Curve evalCircle( float radius, unsigned steps )
