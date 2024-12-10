@@ -99,7 +99,8 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
         cp.T = GDT.xyz().normalized();
 
         // Arbitrary binnormal
-        Vector3f B0(1,0,0); 
+        // Note: default must be <0,0,1> for surfaces of revolution code to work.
+        Vector3f B0(0,0,1); 
 
         // Check that B0 and T aren't parallel
         if (approx(cp.T, B0))
