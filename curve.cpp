@@ -29,6 +29,15 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
         exit( 0 );
     }
 
+    // Print/log input information
+    cerr << "\t>>> evalBezier has been called with the following input:" << endl;
+    cerr << "\t>>> Steps (type steps): " << steps << endl;
+    cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
+    for( unsigned i = 0; i < P.size(); ++i )
+    {
+        cerr << "\t>>> (" << P[i].x() << "," << P[i].y() << "," << P[i].z() << ")" << endl;
+    }
+
     // TODO:
     // You should implement this function so that it returns a Curve
     // (e.g., a vector< CurvePoint >).  The variable "steps" tells you
@@ -46,27 +55,17 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
     // receive have G1 continuity.  Otherwise, the TNB will not be
     // be defined at points where this does not hold.
 
-    cerr << "\t>>> evalBezier has been called with the following input:" << endl;
-
-    cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
-    for( unsigned i = 0; i < P.size(); ++i )
-    {
-        cerr << "\t>>> (" << P[i].x() << "," << P[i].y() << "," << P[i].z() << ")" << endl;
-    }
-
-    cerr << "\t>>> Steps (type steps): " << steps << endl;
 
     // NOTE: still not handling setting T, N, or B!
 
     // Bezier curves count
-    const int curveCount = (P.size() - 4)/3  + 1;
+    const unsigned curveCount = (P.size() - 4)/3  + 1;
+
     // Number of points returned curve should have
-    const int curvePointsCount = steps * (curveCount) - (curveCount - 1);
+    const unsigned curvePointsCount = steps * (curveCount) - (curveCount - 1);
 
-    cout << "Curve count: " << curveCount << '\n';
-    cout << "Sample Points Count: " << curvePointsCount << '\n';
-
-    Curve cur(curvePointsCount);
+    // Curve / sample points to return
+    Curve curve(curvePointsCount);
 
     // Bernstein basis (B)
     const Matrix4f B(
@@ -84,7 +83,7 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
          0,  0,  0, 0
     );
 
-    // sample t = 0 for first curve
+    // First, sample first point of curve
     {
         // Control points matrix (G)
         const Matrix4f G(
@@ -96,55 +95,70 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
 
         // G * B
         const Matrix4f GB = G * B;
+
         // Monomial basis (T(t))
         const Vector4f T(1, 0, 0, 0);
+
         // G * B * T(t) 
         const Vector4f GBT = GB * T;
+
         CurvePoint cp;
         cp.V = Vector3f(GBT.x(), GBT.y(), GBT.z());
-        cur[0] = cp;
+
+        // set first sample point
+        curve[0] = cp;
     }
 
-    // sample points from each curve (except t = 0)
-    // two curves share 1 point, so don't sample it twice
-    // index for current point to set in Curve
-    int curvePointIndex = 1;
-    for (int i = 0; i < curveCount; i++)
+    // Finally, sample (steps - 1) points from each curve
+
+    // But don't sample t = 0 from any curve. Each curve
+    // will be sampled at t = 1, which is same sample point for next 
+    // curve at t = 0, thats why we skip t = 0.
+
+    // Index of next sample point to set
+    unsigned u = 1;
+
+    for (unsigned i = 0; i < curveCount; i++)
     {
         // index of first control point of current curve
-        const int indexP0 = i * 3;
+        const unsigned p_0 = i * 3;
 
         // Control Point matrix (G)
         const Matrix4f G(
-            P[indexP0].x(), P[indexP0 + 1].x(), P[indexP0 + 2].x(), P[indexP0 + 3].x(),
-            P[indexP0].y(), P[indexP0 + 1].y(), P[indexP0 + 2].y(), P[indexP0 + 3].y(),
-            P[indexP0].z(), P[indexP0 + 1].z(), P[indexP0 + 2].z(), P[indexP0 + 3].z(),
+            P[p_0].x(), P[p_0 + 1].x(), P[p_0 + 2].x(), P[p_0 + 3].x(),
+            P[p_0].y(), P[p_0 + 1].y(), P[p_0 + 2].y(), P[p_0 + 3].y(),
+            P[p_0].z(), P[p_0 + 1].z(), P[p_0 + 2].z(), P[p_0 + 3].z(),
             0,              0,                  0,                  0
         );
 
         // G * B
         const Matrix4f GB = G * B;       
 
-        // for each curve sample (steps - 1) points, exclude t = 0
-        // each curve will sample t = 1, so the curve afterwards won't need to sample its t = 0
-        for (int k = 0; k < steps - 1; k++)
+        // Sample points from the curve
+        for (unsigned k = 0; k < steps - 1; k++)
         {
+            // Current value of parameter t
             const float t = ((float) (k + 1)) / (steps - 1);
 
             // Monomial basis (T(t))
             const Vector4f T(1, t, (t * t), (t * t * t));
 
-            // G * B * T(t) 
+            // The sample point
+            // Q(t) = G * B * T(t)
             const Vector4f GBT = GB * T;
 
             CurvePoint cp;
             cp.V = Vector3f(GBT.x(), GBT.y(), GBT.z());
-            cur[curvePointIndex] = cp;
-            curvePointIndex++;
+
+            // add sample point to Curve
+            curve[u] = cp;
+
+            // increment to next sample point index
+            u++;
         }
     }
 
-    return cur;
+    return curve;
 }
 
 Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
