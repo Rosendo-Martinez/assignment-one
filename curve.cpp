@@ -77,10 +77,10 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
 
     // Derivate of Bernstein basis (D)
     const Matrix4f D(
-        -3,  3,  0, 0,
-         0, -6,  6, 0,
-         0,  0, -3, 3,
-         0,  0,  0, 0
+        -3,   6, -3, 0,
+         3, -12,  9, 0,
+         0,   6, -9, 0,
+         0,   0,  3, 0
     );
 
     // First, sample first point of curve
@@ -96,14 +96,28 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
         // G * B
         const Matrix4f GB = G * B;
 
+        // G * D
+        const Matrix4f GD = G * D;
+
         // Monomial basis (T(t))
         const Vector4f T(1, 0, 0, 0);
 
+        // Sample point
         // G * B * T(t) 
         const Vector4f GBT = GB * T;
+        
+        // Tangent
+        // G * D * T(t)
+        const Vector4f GDT = GD * T;
 
         CurvePoint cp;
         cp.V = Vector3f(GBT.x(), GBT.y(), GBT.z());
+        cp.T = GDT.xyz();
+        cp.T.normalize();
+
+        // Only calculating tangent for now
+        cp.B = Vector3f(0,0,0);
+        cp.N = Vector3f(0,0,0);
 
         // set first sample point
         curve[0] = cp;
@@ -132,7 +146,10 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
         );
 
         // G * B
-        const Matrix4f GB = G * B;       
+        const Matrix4f GB = G * B;
+
+        // G * D
+        const Matrix4f GD = G * D;
 
         // Sample points from the curve
         for (unsigned k = 0; k < steps - 1; k++)
@@ -143,12 +160,22 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
             // Monomial basis (T(t))
             const Vector4f T(1, t, (t * t), (t * t * t));
 
-            // The sample point
+            // Sample point
             // Q(t) = G * B * T(t)
             const Vector4f GBT = GB * T;
 
+            // Tangent
+            // G * D * T(t)
+            const Vector4f GDT = GD * T;
+
             CurvePoint cp;
-            cp.V = Vector3f(GBT.x(), GBT.y(), GBT.z());
+            cp.V = GBT.xyz();
+            cp.T = GDT.xyz();
+            cp.T.normalize();
+
+            // Only calculating tangent for now
+            cp.B = Vector3f(0,0,0);
+            cp.N = Vector3f(0,0,0);
 
             // add sample point to Curve
             curve[u] = cp;
