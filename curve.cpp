@@ -166,14 +166,49 @@ Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
     cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
     for( unsigned i = 0; i < P.size(); ++i )
     {
-        cerr << "\t>>> " << P[i].getElements() << endl;
+        cerr << "\t>>> (" << P[i].x() << "," << P[i].y() << "," << P[i].z() << ")" << endl;
     }
 
     cerr << "\t>>> Steps (type steps): " << steps << endl;
     cerr << "\t>>> Returning empty curve." << endl;
+    
+    // For now assume 1 bezier curve (i.e 4 points)
 
-    // Return an empty curve right now.
-    return Curve();
+    // B-spline basis (B_Spline)
+    Matrix4f B_Spline(
+        1/6.f, -3/6.f,  3/6.f, -1/6.f,
+        4/6.f,  0/6.f, -6/6.f,  3/6.f,
+        1/6.f,  3/6.f,  3/6.f, -3/6.f,
+        0/6.f,  0/6.f,  0/6.f,  1/6.f
+    );
+
+    // Bernstein basis (B_Bezier)
+    const Matrix4f B_Bezier(
+        1, -3,  3, -1,
+        0,  3, -6,  3,
+        0,  0,  3, -3,
+        0,  0,  0,  1
+    );
+
+    // Control points matrix (G_spline)
+    const Matrix4f G_Spline(
+        P[0].x(), P[1].x(), P[2].x(), P[3].x(),
+        P[0].y(), P[1].y(), P[2].y(), P[3].y(),
+        P[0].z(), P[1].z(), P[2].z(), P[3].z(),
+        0,        0,        0,        0
+    );
+
+    // Change of basis from b-spline to bezier
+    const Matrix4f G_Bezier = G_Spline * (B_Spline * B_Bezier.inverse());
+    
+    vector<Vector3f> P_Bezier(P.size());
+    // create new list of control points that are in bezier basis
+    for (int i = 0; i < P_Bezier.size(); i++)
+    {
+        P_Bezier[i] = G_Bezier.getCol(i).xyz();
+    }
+
+    return evalBezier(P_Bezier, steps);
 }
 
 Curve evalCircle( float radius, unsigned steps )
