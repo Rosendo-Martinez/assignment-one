@@ -38,25 +38,9 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
         cerr << "\t>>> (" << P[i].x() << "," << P[i].y() << "," << P[i].z() << ")" << endl;
     }
 
-    // TODO:
-    // You should implement this function so that it returns a Curve
-    // (e.g., a vector< CurvePoint >).  The variable "steps" tells you
-    // the number of points to generate on each piece of the spline.
-    // At least, that's how the sample solution is implemented and how
-    // the SWP files are written.  But you are free to interpret this
-    // variable however you want, so long as you can control the
-    // "resolution" of the discretized spline curve with it.
-
-    // Make sure that this function computes all the appropriate
-    // Vector3fs for each CurvePoint: V,T,N,B.
-    // [NBT] should be unit and orthogonal.
-
-    // Also note that you may assume that all Bezier curves that you
+    // Assume that all Bezier curves that you
     // receive have G1 continuity.  Otherwise, the TNB will not be
     // be defined at points where this does not hold.
-
-
-    // NOTE: still not handling setting T, N, or B!
 
     // Bezier curves count
     const unsigned curveCount = (P.size() - 4)/3  + 1;
@@ -111,11 +95,10 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
         const Vector4f GDT = GD * T;
 
         CurvePoint cp;
-        cp.V = Vector3f(GBT.x(), GBT.y(), GBT.z());
-        cp.T = GDT.xyz();
-        cp.T.normalize();
+        cp.V = GBT.xyz();
+        cp.T = GDT.xyz().normalized();
 
-        // Arbitrary binormal
+        // Arbitrary binnormal
         Vector3f B0(1,0,0); 
 
         // Check that B0 and T aren't parallel
@@ -124,7 +107,9 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
             B0 = Vector3f(0,1,0);
         }
 
+        // Normal
         cp.N = Vector3f::cross(B0,cp.T).normalized();
+        // Binnormal
         cp.B = Vector3f::cross(cp.T,cp.N).normalized();
 
         // set first sample point
@@ -178,10 +163,11 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
 
             CurvePoint cp;
             cp.V = GBT.xyz();
-            cp.T = GDT.xyz();
-            cp.T.normalize();
-
+            // T = Q'(t)/|Q'(t)|
+            cp.T = GDT.xyz().normalized();
+            // N_i = B_(i-1) x T_i
             cp.N = Vector3f::cross(curve[u-1].B,cp.T).normalized();
+            // B_i = T_i x N_i
             cp.B = Vector3f::cross(cp.T,cp.N).normalized();
 
             // add sample point to Curve
