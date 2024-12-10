@@ -51,14 +51,60 @@ Curve evalBezier( const vector< Vector3f >& P, unsigned steps )
     cerr << "\t>>> Control points (type vector< Vector3f >): "<< endl;
     for( unsigned i = 0; i < P.size(); ++i )
     {
-        cerr << "\t>>> " << P[i].getElements() << endl;
+        cerr << "\t>>> (" << P[i].x() << "," << P[i].y() << "," << P[i].z() << ")" << endl;
     }
 
     cerr << "\t>>> Steps (type steps): " << steps << endl;
-    cerr << "\t>>> Returning empty curve." << endl;
 
-    // Right now this will just return this empty curve.
-    return Curve();
+    // FOR NOW: assuming its just 1 curve  (i.e just 4 points in P)
+    Curve cur(steps);
+
+    // Bernstein basis (B)
+    Matrix4f B(
+        1, -3,  3, -1,
+        0,  3, -6,  3,
+        0,  0,  3, -3,
+        0,  0,  0,  1
+    );
+
+    // Derivate of Bernstein basis (D)
+    Matrix4f D(
+        -3,  3,  0, 0,
+         0, -6,  6, 0,
+         0,  0, -3, 3,
+         0,  0,  0, 0
+    );
+
+    // Control points matrix (G)
+    Matrix4f G(
+        P[0].x(), P[1].x(), P[2].x(), P[3].x(),
+        P[0].y(), P[1].y(), P[2].y(), P[3].y(),
+        P[0].z(), P[1].z(), P[2].z(), P[3].z(),
+        0,        0,        0,        0
+    ); 
+
+    // G * B
+    Matrix4f GB = G * B;
+
+    float t;
+    // sample step count points from curve
+    for (unsigned i = 0; i < steps; i++)
+    {
+        t = i * ((float) 1 / (steps - 1));
+
+        // Monomial basis (T(t))
+        Vector4f T(1 , t, (t * t), (t * t * t));
+
+        // GB * T(t) 
+        Vector4f GBT = GB * T;
+
+        CurvePoint cp;
+        cp.V = Vector3f(GBT.x(), GBT.y(), GBT.z());
+
+        cur[i] = cp;
+    }
+
+    return cur;
 }
 
 Curve evalBspline( const vector< Vector3f >& P, unsigned steps )
