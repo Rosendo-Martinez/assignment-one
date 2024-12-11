@@ -171,6 +171,46 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
         }
     }
 
+    // 'upper' triangels
+    // iterae through vertcies fo surfces
+    // note, verteceis are grouped by curve, so first couple verteces are cruve 1, next are on vurce 2, and so on
+    for (unsigned i = 0; i < surface.VV.size(); i++)
+    {
+        /**
+         * Upper Triangle
+         * 
+         * A----C
+         * |   /
+         * |  /
+         * | /
+         * |/
+         * B
+         * 
+         * A, and B are on same curve. C is on a adjacent curve.
+         * A is the current vertex.
+         * B is the vertex 'after' vertex A on their respective curve.
+         * C are in same relative postion on their respective curves.
+         */
+
+        unsigned B;
+        // Case: current vertex is 'last' point on the curve its on
+        if (((i + 1) % (profile.size() - 1)) == 0)
+        {
+            // B is first point on current vertex's curve its on
+            B = i - (profile.size() - 2);
+        }
+        else
+        {
+            B = i + 1;
+        }
+        unsigned A = i;
+        unsigned C = (i + profile.size() - 1) % surface.VV.size();
+
+        cout << "(A, B, C) = (" << A << ", " << B << ", " << C << ")\n";
+
+        surface.VF.push_back(Tup3u(A,B,C));
+    }
+
     return surface;
 }
 
