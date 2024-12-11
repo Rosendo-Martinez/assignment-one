@@ -22,6 +22,9 @@ namespace
 
 Surface makeSurfRev(const Curve &profile, unsigned steps)
 {
+    // Some assumptions are made, if they are  not kept,
+    // then likely will produce incorrect results.
+
     Surface surface;
     
     if (!checkFlat(profile))
@@ -30,30 +33,25 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
         exit(0);
     }
 
-    // TODO: Here you should build the surface.  See surf.h for details.
-    // TODO: Traingulate the surface
+    // Two main steps:
+    // 1) create rotated curves
+    // 2) triangulate the curves
 
-    // Note, curves vertecies and normals will be added one curve after the other in same order as where in curve.
-    // This will be important to know when triangulating surface.
-
-    // create step number of curves with respective rotations around +y axis
+    // Create curves of surface
     for (unsigned i = 0; i < steps; i++)
     {
         // rotation angle
         const double a = (2*M_PI)/(steps) * i;
 
-        // Rotation theta (counter clockwise) around +y-axis
+        // Rotation matrix (R):
+        // counter-clock wise rotation around +y axis
         const Matrix3f R(
             cos(a),  0, sin(a),
             0,       1, 0,
             -sin(a), 0, cos(a)
         );
 
-        // cout << "Rotation Angle: " << (a * 180/(M_PI)) << "\n";
-        // cout << "Rotation matrix:\n";
-        // R.print();
-
-        // now iterate through orignal curve, rotate each point, and add it surface
+        // rotate profile curve
         for (unsigned j = 0; j < profile.size(); j++)
         {
             // Rotate vertex (V)
@@ -83,6 +81,8 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
         // | /
         // B
 
+        // Note, A and B are on same curve, and C is on adjacent curve.
+
         // A is i
         // B is i + 1
         // C is i + profile.size()
@@ -107,6 +107,8 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
          *    /  |
          *  /    |
          * A-----B
+         * 
+         * Note, B and C are on same curve, and A is on adjacent curve.
          */
 
         // A is i
@@ -115,11 +117,6 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
 
         surface.VF.push_back(Tup3u(i, (i + profile.size()) % surface.VV.size(), (i+profile.size() - 1) % surface.VV.size()));   
     }
-
-    cerr << "\t>>> makeSurfRev called (but not implemented).\n\t>>> Returning empty surface." << endl;
-    // cout << "Surface.VV size: " << surface.VV.size() << "\n";
-    // cout << "Surface.VN size: " << surface.VN.size() << "\n";
-    // cout << "steps * profile.size(): " << (steps * profile.size()) << "\n";
  
     return surface;
 }
