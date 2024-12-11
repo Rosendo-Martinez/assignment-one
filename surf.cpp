@@ -1,5 +1,6 @@
 #include "surf.h"
 #include "extra.h"
+#include <cmath>
 using namespace std;
 
 namespace
@@ -30,8 +31,46 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
     }
 
     // TODO: Here you should build the surface.  See surf.h for details.
+    // TODO: Traingulate the surface
+
+    // Note, curves vertecies and normals will be added one curve after the other in same order as where in curve.
+    // This will be important to know when triangulating surface.
+
+    // create step number of curves with respective rotations around +y axis
+    for (unsigned i = 0; i < steps; i++)
+    {
+        // rotation angle
+        const double a = (2*M_PI)/(steps) * i;
+
+        // Rotation theta (counter clockwise) around +y-axis
+        const Matrix3f R(
+            cos(a),  0, sin(a),
+            0,       1, 0,
+            -sin(a), 0, cos(a)
+        );
+
+        // cout << "Rotation Angle: " << (a * 180/(M_PI)) << "\n";
+        // cout << "Rotation matrix:\n";
+        // R.print();
+
+        // now iterate through orignal curve, rotate each point, and add it surface
+        for (unsigned j = 0; j < profile.size(); j++)
+        {
+            // Rotate vertex (V)
+            const Vector3f V = R * profile[i].V;
+            // Rotate normal (N)
+            const Vector3f N = R * profile[i].N;
+
+            // add to surface
+            surface.VV.push_back(V);
+            surface.VN.push_back(N);
+        }
+    }
 
     cerr << "\t>>> makeSurfRev called (but not implemented).\n\t>>> Returning empty surface." << endl;
+    // cout << "Surface.VV size: " << surface.VV.size() << "\n";
+    // cout << "Surface.VN size: " << surface.VN.size() << "\n";
+    // cout << "steps * profile.size(): " << (steps * profile.size()) << "\n";
  
     return surface;
 }
