@@ -211,6 +211,44 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
         surface.VF.push_back(Tup3u(A,B,C));
     }
 
+    // 'lower' traingles
+    for (unsigned i = 0; i < surface.VV.size(); i++)
+    {
+        /**
+         * Lower Triangle
+         * 
+         *      C
+         *     /|
+         *    / |
+         *   /  |
+         *  /   |
+         * A----B
+         * 
+         * B, and C are on same curve. A is on a adjacent curve.
+         * A is the current vertex.
+         * B is the vertex 'after' vertex C on their respective curve.
+         * A, and B are in same relative postion on their respective curves.
+         */
+
+        unsigned A = i;
+        unsigned B = (i + profile.size() - 1) % surface.VV.size();
+        unsigned C;
+
+        // Case: B is first point on its curve
+        if (B % (profile.size() - 1) == 0)
+        {
+            // B is first point on curve
+            // So, B comes 'after' the last point, which is what C is
+            C = B + (profile.size() - 2);
+        }
+        else
+        {
+            C = B - 1;
+        }
+
+        surface.VF.push_back(Tup3u(A,B,C));
+    }
+
     return surface;
 }
 
