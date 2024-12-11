@@ -123,8 +123,10 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
 
 Surface makeGenCyl(const Curve &profile, const Curve &sweep )
 {
-    cerr << "\t>>> makeGenCyl called (but not fully implemented).\n" <<endl;
-    Surface surface;
+    // Unchecked Assumptions:
+    // 1) Both profile, and sweep are closed curves (i.e first and last points are equal)
+    // 2) Normals point 'inward' on profile, and sweep
+
 
     if (!checkFlat(profile))
     {
@@ -132,12 +134,13 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
         exit(0);
     }
 
-    // For now, just drag the curve, so don't do triangulation yet.
+    // Known Problem: cylinder may not align properly at its ends due to normals, and binnormals essentially
+    // being arbitrary.
 
-    // iterate through each point on sweep
-    // each point be the new coordinate system!
-    // that is how we will drag profile
-    for (unsigned i = 0; i < sweep.size() - 1; i++) // ASSUMING sweep is closed, then first and last points are equal so -1
+    Surface surface;
+
+    // 'Drag' the profile curve around sweep curve
+    for (unsigned i = 0; i < sweep.size() - 1; i++) // Assumption: sweep is closed curve, so duplicate point (-1)
     {
         /**
          * Homogenous transformation matrix for points on profile
@@ -154,9 +157,8 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
          */
         const Matrix3f M2(sweep[i].N, sweep[i].B, sweep[i].T);
 
-        // now calculate teh new poistion of each point, and new normals at each point for transformed profile
-        // add to surface
-        for (unsigned j = 0; j < profile.size() - 1; j++) // ASSUMING profile is closed, then first and last points are equal so -1
+        // Transform profile curve
+        for (unsigned j = 0; j < profile.size() - 1; j++) // Assumption: profile is closed curve, so duplicate point (-1)
         {
             // Do an affine transformation on the vertex
             // V = M1 * [V;1]
@@ -164,16 +166,14 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
 
             // Do a transformation on the normal
             // N = M2 * N * -1
-            const Vector3f N = (M2 * profile[j].N) * -1; // ASSUMING normals point 'inwards', so * -1 to make it point 'outwards'.
+            const Vector3f N = (M2 * profile[j].N) * -1; // Assumption: normals point 'inwards'
 
             surface.VV.push_back(V);
             surface.VN.push_back(N);
         }
     }
 
-    // 'upper' triangels
-    // iterae through vertcies fo surfces
-    // note, verteceis are grouped by curve, so first couple verteces are cruve 1, next are on vurce 2, and so on
+    // Create 'upper' triangles
     for (unsigned i = 0; i < surface.VV.size(); i++)
     {
         /**
@@ -189,7 +189,7 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
          * A, and B are on same curve. C is on a adjacent curve.
          * A is the current vertex.
          * B is the vertex 'after' vertex A on their respective curve.
-         * C are in same relative postion on their respective curves.
+         * A, and C are in same relative postion on their respective curves.
          */
 
         unsigned B;
@@ -203,15 +203,13 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
         {
             B = i + 1;
         }
-        unsigned A = i;
-        unsigned C = (i + profile.size() - 1) % surface.VV.size();
-
-        cout << "(A, B, C) = (" << A << ", " << B << ", " << C << ")\n";
+        const unsigned A = i;
+        const unsigned C = (i + profile.size() - 1) % surface.VV.size();
 
         surface.VF.push_back(Tup3u(A,B,C));
     }
 
-    // 'lower' traingles
+    // Create 'lower' triangles
     for (unsigned i = 0; i < surface.VV.size(); i++)
     {
         /**
@@ -230,8 +228,8 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
          * A, and B are in same relative postion on their respective curves.
          */
 
-        unsigned A = i;
-        unsigned B = (i + profile.size() - 1) % surface.VV.size();
+        const unsigned A = i;
+        const unsigned B = (i + profile.size() - 1) % surface.VV.size();
         unsigned C;
 
         // Case: B is first point on its curve
