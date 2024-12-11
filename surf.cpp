@@ -67,6 +67,29 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
         }
     }
 
+    // generate 'upper' triangles
+    for (unsigned i = 0; i < surface.VV.size(); i++)
+    {
+        // Vertex is last point on its curve
+        // so it can't form a upper triangle with it as top left
+        if ((i + 1) % profile.size() == 0)
+        {
+            continue;
+        }
+
+        // Upper Triangle
+        // A-----C
+        // |   /
+        // | /
+        // B
+
+        // A is i
+        // B is i + 1
+        // C is i + profile.size()
+
+        surface.VF.push_back(Tup3u(i, i+1, (i+profile.size()) % surface.VV.size()));
+    }
+
     cerr << "\t>>> makeSurfRev called (but not implemented).\n\t>>> Returning empty surface." << endl;
     // cout << "Surface.VV size: " << surface.VV.size() << "\n";
     // cout << "Surface.VN size: " << surface.VN.size() << "\n";
