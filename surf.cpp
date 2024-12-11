@@ -90,6 +90,32 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
         surface.VF.push_back(Tup3u(i, i+1, (i+profile.size()) % surface.VV.size()));
     }
 
+    // generate 'lower' triangles
+    for (unsigned i = 0; i < surface.VV.size(); i++)
+    {
+        // Vertex is first point on its curve
+        // so it can't form a lower triangle with it as bottom left
+        if (i % profile.size() == 0)
+        {
+            continue;
+        }
+
+        /**
+         * Lower Triangle
+         *       C
+         *      /|
+         *    /  |
+         *  /    |
+         * A-----B
+         */
+
+        // A is i
+        // B is i + profile.size()
+        // C is i + profile.size() - 1
+
+        surface.VF.push_back(Tup3u(i, (i + profile.size()) % surface.VV.size(), (i+profile.size() - 1) % surface.VV.size()));   
+    }
+
     cerr << "\t>>> makeSurfRev called (but not implemented).\n\t>>> Returning empty surface." << endl;
     // cout << "Surface.VV size: " << surface.VV.size() << "\n";
     // cout << "Surface.VN size: " << surface.VN.size() << "\n";
