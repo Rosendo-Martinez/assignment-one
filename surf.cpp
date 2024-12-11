@@ -57,9 +57,9 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
         for (unsigned j = 0; j < profile.size(); j++)
         {
             // Rotate vertex (V)
-            const Vector3f V = R * profile[i].V;
+            const Vector3f V = R * profile[j].V;
             // Rotate normal (N)
-            const Vector3f N = R * profile[i].N;
+            const Vector3f N = R * (-1 * profile[j].N);
 
             // add to surface
             surface.VV.push_back(V);
