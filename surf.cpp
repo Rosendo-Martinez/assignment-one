@@ -123,6 +123,7 @@ Surface makeSurfRev(const Curve &profile, unsigned steps)
 
 Surface makeGenCyl(const Curve &profile, const Curve &sweep )
 {
+    cerr << "\t>>> makeGenCyl called (but not fully implemented).\n" <<endl;
     Surface surface;
 
     if (!checkFlat(profile))
@@ -131,9 +132,44 @@ Surface makeGenCyl(const Curve &profile, const Curve &sweep )
         exit(0);
     }
 
-    // TODO: Here you should build the surface.  See surf.h for details.
+    // For now, just drag the curve, so don't do triangulation yet.
 
-    cerr << "\t>>> makeGenCyl called (but not implemented).\n\t>>> Returning empty surface." <<endl;
+    // iterate through each point on sweep
+    // each point be the new coordinate system!
+    // that is how we will drag profile
+    for (unsigned i = 0; i < sweep.size() - 1; i++) // ASSUMING sweep is closed, then first and last points are equal so -1
+    {
+        /**
+         * Homogenous transformation matrix for points on profile
+         * 
+         * M1 = | N B T V |
+         *      | 0 0 0 1 |
+         */
+        const Matrix4f M1(Vector4f(sweep[i].N, 0), Vector4f(sweep[i].B, 0), Vector4f(sweep[i].T, 0), Vector4f(sweep[i].V,1));
+
+        /**
+         * Transformation matrix for normals on profile
+         * 
+         * M2 = | N B T |
+         */
+        const Matrix3f M2(sweep[i].N, sweep[i].B, sweep[i].T);
+
+        // now calculate teh new poistion of each point, and new normals at each point for transformed profile
+        // add to surface
+        for (unsigned j = 0; j < profile.size() - 1; j++) // ASSUMING profile is closed, then first and last points are equal so -1
+        {
+            // Do an affine transformation on the vertex
+            // V = M1 * [V;1]
+            const Vector3f V = (M1 * Vector4f(profile[j].V,1)).xyz();
+
+            // Do a transformation on the normal
+            // N = M2 * N * -1
+            const Vector3f N = (M2 * profile[j].N) * -1; // ASSUMING normals point 'inwards', so * -1 to make it point 'outwards'.
+
+            surface.VV.push_back(V);
+            surface.VN.push_back(N);
+        }
+    }
 
     return surface;
 }
